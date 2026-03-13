@@ -1072,7 +1072,7 @@ async function loadMatches(leagueId) {
   try {
     const r = await fetch(`${API}/matches?league=${leagueId}&days=${state.days}`);
     const data = await r.json();
-    state.matches = data.matches || [];
+    state.matches = (data.matches || []).sort((a, b) => (b.volume || 0) - (a.volume || 0));
     const liga = state.leagues.find(l => l.id === leagueId);
     setMainTitle(liga?.name || leagueId);
     setStatus(`${state.matches.length} partidos`, false);
