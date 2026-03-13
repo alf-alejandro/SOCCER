@@ -431,39 +431,17 @@ Using your knowledge of current season statistics, return ONLY a valid JSON obje
   "analysis": "<3 sentences: current form, EXPLICIT mention of key injuries and how they alter the xG/xGA math, main tactical factor>"
 }}"""
 
-    text = ""
-    try:
-        print(f"[Run #{run_index}] Intentando con gemini-2.0-flash + Google Search grounding...")
-        resp = requests.post(
-            GEMINI_REST_URL,
-            params={"key": api_key},
-            json={
-                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                "tools": [{"googleSearch": {}}],
-            },
-            timeout=90,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
-        print(f"[Run #{run_index}] Grounding OK, respuesta: {len(text)} chars")
-    except Exception as grounding_err:
-        print(f"[Run #{run_index}] Grounding falló ({grounding_err}), usando fallback sin tools...")
-        text = ""
-        try:
-            resp = requests.post(
-                GEMINI_REST_URL,
-                params={"key": api_key},
-                json={"contents": [{"role": "user", "parts": [{"text": prompt}]}]},
-                timeout=90,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            text = data["candidates"][0]["content"]["parts"][0]["text"]
-            print(f"[Run #{run_index}] Fallback OK, respuesta: {len(text)} chars")
-        except Exception as fallback_err:
-            print(f"[Run #{run_index}] Fallback también falló: {fallback_err}")
-            raise fallback_err
+    print(f"[Run #{run_index}] Llamando gemini-2.0-flash...")
+    resp = requests.post(
+        GEMINI_REST_URL,
+        params={"key": api_key},
+        json={"contents": [{"role": "user", "parts": [{"text": prompt}]}]},
+        timeout=90,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    text = data["candidates"][0]["content"]["parts"][0]["text"]
+    print(f"[Run #{run_index}] OK, respuesta: {len(text)} chars")
 
     print(f"[Run #{run_index}] Texto crudo (primeros 300 chars): {text[:300]!r}")
     cleaned = re.sub(r"```json|```", "", text).strip()
