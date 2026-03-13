@@ -580,7 +580,7 @@ def api_matches():
 @app.route("/api/analyze", methods=["POST"])
 def api_analyze():
     data    = request.json or {}
-    api_key = data.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY","")
+    api_key = os.environ.get("GEMINI_API_KEY") or data.get("gemini_api_key","")
     if not api_key:
         return jsonify({"error": "Gemini API Key requerida"}), 400
 
