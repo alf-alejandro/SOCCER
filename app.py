@@ -409,12 +409,10 @@ NUMERIC_FIELDS = [
     "injury_index_home", "injury_index_away",
 ]
 
-def _single_gemini_call(api_key, home, away, league, run_index):
-    from google import genai
-    from google.genai import types
+GEMINI_REST_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
+def _single_gemini_call(api_key, home, away, league, run_index):
     print(f"\n[Gemini Run #{run_index}] Iniciando llamada: {home} vs {away}")
-    client = genai.Client(api_key=api_key)
 
     prompt = f"""You are a top soccer analytics expert. Analyze this match: {home} vs {away} ({league or "Soccer"}).
 
@@ -436,25 +434,32 @@ Using your knowledge of current season statistics, return ONLY a valid JSON obje
     text = ""
     try:
         print(f"[Run #{run_index}] Intentando con gemini-2.0-flash + Google Search grounding...")
-        for chunk in client.models.generate_content_stream(
-            model="gemini-2.5-flash-lite",
-            contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
-            config=types.GenerateContentConfig(
-                tools=[types.Tool(google_search=types.GoogleSearch())],
-            ),
-        ):
-            if chunk.text:
-                text += chunk.text
+        resp = requests.post(
+            GEMINI_REST_URL,
+            params={"key": api_key},
+            json={
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "tools": [{"googleSearch": {}}],
+            },
+            timeout=90,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        text = data["candidates"][0]["content"]["parts"][0]["text"]
         print(f"[Run #{run_index}] Grounding OK, respuesta: {len(text)} chars")
     except Exception as grounding_err:
         print(f"[Run #{run_index}] Grounding falló ({grounding_err}), usando fallback sin tools...")
         text = ""
         try:
-            response = client.models.generate_content(
-                model="gemini-2.5-flash-lite",
-                contents=prompt,
+            resp = requests.post(
+                GEMINI_REST_URL,
+                params={"key": api_key},
+                json={"contents": [{"role": "user", "parts": [{"text": prompt}]}]},
+                timeout=90,
             )
-            text = response.text or ""
+            resp.raise_for_status()
+            data = resp.json()
+            text = data["candidates"][0]["content"]["parts"][0]["text"]
             print(f"[Run #{run_index}] Fallback OK, respuesta: {len(text)} chars")
         except Exception as fallback_err:
             print(f"[Run #{run_index}] Fallback también falló: {fallback_err}")
