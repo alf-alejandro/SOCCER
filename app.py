@@ -409,7 +409,7 @@ NUMERIC_FIELDS = [
     "injury_index_home", "injury_index_away",
 ]
 
-GEMINI_REST_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+GEMINI_REST_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent"
 
 def _single_gemini_call(api_key, home, away, league, run_index):
     print(f"\n[Gemini Run #{run_index}] Iniciando llamada: {home} vs {away}")
@@ -431,11 +431,15 @@ Using your knowledge of current season statistics, return ONLY a valid JSON obje
   "analysis": "<3 sentences: current form, EXPLICIT mention of key injuries and how they alter the xG/xGA math, main tactical factor>"
 }}"""
 
-    print(f"[Run #{run_index}] Llamando gemini-2.0-flash...")
+    print(f"[Run #{run_index}] Llamando gemini-flash-lite-latest...")
     resp = requests.post(
         GEMINI_REST_URL,
         params={"key": api_key},
-        json={"contents": [{"role": "user", "parts": [{"text": prompt}]}]},
+        json={
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "tools": [{"googleSearch": {}}],
+            "generationConfig": {"thinkingConfig": {"thinkingBudget": 0}},
+        },
         timeout=90,
     )
     resp.raise_for_status()
