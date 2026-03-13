@@ -6,7 +6,9 @@ NEA Soccer Bot — Backend Flask
   POST /api/analyze          → análisis NEA completo con Gemini
 """
 
-import os, re, json, math, requests
+import os, re, json, math, requests, sys
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 from datetime import datetime, timezone, timedelta
 from flask import Flask, jsonify, request
 from flask_cors import CORS
