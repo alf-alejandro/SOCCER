@@ -731,7 +731,7 @@ def api_debug_markets():
 
 
 if __name__ == "__main__":
-    print("\n⚽  NEA Soccer Bot — Backend")
+    print("\n NEA Soccer Bot - Backend")
     port = int(os.environ.get("PORT", 5000))
     print(f"   http://localhost:{port}\n")
     app.run(debug=False, host="0.0.0.0", port=port)
