@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEA Soccer Bot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ── Reset & Base ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #060810;
+  --surface:  #0c1018;
+  --surface2: #111822;
+  --border:   #1a2438;
+  --border2:  #243048;
+  --green:    #00e676;
+  --green2:   #00b85c;
+  --red:      #ff3d57;
+  --yellow:   #ffd600;
+  --blue:     #3d8bff;
+  --purple:   #a78bfa;
+  --muted:    #2d3f58;
+  --sub:      #4a6080;
+  --text:     #d8e8f8;
+  --text2:    #7a98bc;
+  --mono:     'JetBrains Mono', monospace;
+}
+html { font-size: 14px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── Layout ────────────────────────────────────────────────── */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  overflow-y: auto;
+}
+.main {
+  flex: 1;
+  margin-left: 260px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+.sb-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sb-logo-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 3px;
+  color: var(--green);
+  line-height: 1;
+}
+.sb-logo-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--sub);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+.sb-section {
+  padding: 16px 20px 10px;
+}
+.sb-section-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sb-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.key-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 8px 10px;
+}
+.key-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.key-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: all .3s;
+  flex-shrink: 0;
+}
+.key-dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+/* Days filter */
+.days-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.day-btn {
+  flex: 1;
+  padding: 6px 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--sub);
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+}
+.day-btn:hover { border-color: var(--border2); color: var(--text2); }
+.day-btn.active { border-color: var(--green); color: var(--green); background: rgba(0,230,118,.06); }
+
+/* League list */
+.league-list { padding: 0 12px; }
+.league-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all .12s;
+  border: 1px solid transparent;
+  margin-bottom: 1px;
+}
+.league-item:hover { background: var(--surface2); }
+.league-item.active {
+  background: rgba(0,230,118,.06);
+  border-color: rgba(0,230,118,.2);
+}
+.league-name {
+  font-size: 12px;
+  color: var(--text2);
+  flex: 1;
+}
+.league-item.active .league-name { color: var(--green); font-weight: 500; }
+.league-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--sub);
+  background: var(--surface2);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.sb-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+/* ── Main header ───────────────────────────────────────────── */
+.main-header {
+  padding: 24px 32px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.main-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+.main-subtitle {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--sub);
+}
+.status-pill {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--sub);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.status-dot.live { background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+/* ── Content ───────────────────────────────────────────────── */
+.content { flex: 1; padding: 28px 32px; }
+
+/* Formula bar */
+.formula-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: rgba(61,139,255,.04);
+  border: 1px solid rgba(61,139,255,.12);
+  border-radius: 6px;
+  padding: 12px 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.f-item { display: flex; flex-direction: column; gap: 2px; }
+.f-label { font-family: var(--mono); font-size: 8px; color: var(--sub); text-transform: uppercase; letter-spacing: 1px; }
+.f-val { font-family: var(--mono); font-size: 11px; color: var(--blue); }
+.f-sep { color: var(--border2); font-size: 18px; }
+
+/* Loading */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-txt { font-family: var(--mono); font-size: 11px; color: var(--sub); }
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 10px;
+  color: var(--sub);
+}
+.empty-icon { font-size: 40px; opacity: .4; }
+.empty-txt { font-family: var(--mono); font-size: 12px; }
+
+/* Error */
+.error-bar {
+  background: rgba(255,61,87,.07);
+  border: 1px solid rgba(255,61,87,.25);
+  border-radius: 5px;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--red);
+  margin-bottom: 16px;
+}
+
+/* ── Match table ───────────────────────────────────────────── */
+.matches-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.matches-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--sub);
+  background: var(--surface2);
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+.league-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 1px;
+  color: var(--text);
+}
+
+.match-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  position: relative;
+}
+.match-card:hover { border-color: var(--border2); background: var(--surface2); }
+.match-card.selected {
+  border-color: rgba(0,230,118,.4);
+  background: rgba(0,230,118,.03);
+}
+.match-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 8px 0 0 8px;
+  background: transparent;
+  transition: background .15s;
+}
+.match-card.selected::before { background: var(--green); }
+
+.match-teams { display: flex; flex-direction: column; gap: 3px; }
+.match-name {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text);
+}
+.match-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.tag-pill {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--sub);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.match-time {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text2);
+}
+
+.match-vol {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--sub);
+  text-align: right;
+}
+.match-vol-num { color: var(--text2); font-size: 13px; }
+
+.match-odds {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.odds-row {
+  display: flex;
+  gap: 6px;
+}
+.odds-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+.odds-chip.h { border-color: rgba(0,230,118,.2); color: var(--green); }
+.odds-chip.d { border-color: rgba(255,214,0,.2); color: var(--yellow); }
+.odds-chip.a { border-color: rgba(255,61,87,.2); color: var(--red); }
+
+.btn-analyze {
+  padding: 8px 16px;
+  background: var(--green);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+  white-space: nowrap;
+}
+.btn-analyze:hover:not(:disabled) { opacity: .85; transform: translateY(-1px); }
+.btn-analyze:disabled { background: var(--muted); cursor: not-allowed; color: var(--sub); }
+
+/* ── Botón Buscar Oportunidades ────────────────────────────── */
+.btn-hunt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #ffd600 0%, #ff9800 100%);
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+  box-shadow: 0 0 20px rgba(255,214,0,.2);
+}
+.btn-hunt:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); box-shadow: 0 0 30px rgba(255,214,0,.35); }
+.btn-hunt:disabled { background: var(--muted); cursor: not-allowed; color: var(--sub); box-shadow: none; }
+
+/* ── Botón A Ganar ─────────────────────────────────────────── */
+.btn-winner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #00e676 0%, #00b85c 100%);
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+  box-shadow: 0 0 20px rgba(0,230,118,.2);
+}
+.btn-winner:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); box-shadow: 0 0 30px rgba(0,230,118,.4); }
+.btn-winner:disabled { background: var(--muted); cursor: not-allowed; color: var(--sub); box-shadow: none; }
+
+/* ── Winner cards ──────────────────────────────────────────── */
+.winner-card {
+  background: var(--surface);
+  border: 1px solid rgba(0,230,118,.25);
+  border-left: 4px solid var(--green);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  animation: fadeUp .3s ease;
+}
+.winner-card:hover { border-color: rgba(0,230,118,.5); background: var(--surface2); }
+.winner-outcome-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(0,230,118,.08);
+  border: 1px solid rgba(0,230,118,.3);
+  border-radius: 5px;
+  padding: 8px 12px;
+  min-width: 110px;
+}
+.winner-outcome-vreal {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--green);
+}
+
+/* ── Panel de Oportunidades ────────────────────────────────── */
+.hunt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6,8,16,.92);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(4px);
+}
+.hunt-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.hunt-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--yellow);
+}
+.hunt-subtitle {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--sub);
+  margin-top: 2px;
+}
+.hunt-close {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.hunt-close:hover { border-color: var(--border2); color: var(--text); }
+
+.hunt-progress {
+  padding: 16px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.hunt-progress-bar-bg {
+  background: var(--surface2);
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.hunt-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--yellow), #ff9800);
+  border-radius: 4px;
+  transition: width .3s ease;
+}
+.hunt-progress-txt {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--sub);
+  display: flex;
+  justify-content: space-between;
+}
+
+.hunt-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+.hunt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 12px;
+}
+.hunt-empty-icon { font-size: 48px; opacity: .4; }
+.hunt-empty-txt { font-family: var(--mono); font-size: 13px; color: var(--sub); }
+
+.hunt-section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bargain-card {
+  background: var(--surface);
+  border: 1px solid rgba(255,214,0,.25);
+  border-left: 4px solid var(--yellow);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  animation: fadeUp .3s ease;
+}
+.bargain-card:hover { border-color: rgba(255,214,0,.5); background: var(--surface2); }
+.bargain-match { font-weight: 500; font-size: 14px; color: var(--text); margin-bottom: 4px; }
+.bargain-league { font-family: var(--mono); font-size: 10px; color: var(--sub); margin-bottom: 10px; }
+.bargain-outcomes { display: flex; gap: 8px; flex-wrap: wrap; }
+.bargain-outcome-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(255,214,0,.08);
+  border: 1px solid rgba(255,214,0,.3);
+  border-radius: 5px;
+  padding: 6px 10px;
+  min-width: 90px;
+}
+.bargain-outcome-label { font-family: var(--mono); font-size: 8px; color: var(--sub); text-transform: uppercase; letter-spacing: 1px; }
+.bargain-outcome-team { font-size: 11px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+.bargain-outcome-nea { font-family: var(--mono); font-size: 13px; color: var(--yellow); font-weight: 700; }
+.bargain-outcome-poly { font-family: var(--mono); font-size: 10px; color: var(--text2); }
+
+.bargain-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.bargain-time { font-family: var(--mono); font-size: 10px; color: var(--sub); }
+.bargain-vol { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+.bargain-link {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--blue);
+  text-decoration: none;
+  border: 1px solid rgba(61,139,255,.2);
+  padding: 3px 8px;
+  border-radius: 3px;
+  transition: all .15s;
+}
+.bargain-link:hover { border-color: var(--blue); background: rgba(61,139,255,.08); }
+
+.hunt-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.hunt-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hunt-stat-label { font-family: var(--mono); font-size: 9px; color: var(--sub); text-transform: uppercase; letter-spacing: 1px; }
+.hunt-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; line-height: 1; }
+.hunt-stat-val.green { color: var(--green); }
+.hunt-stat-val.yellow { color: var(--yellow); }
+.hunt-stat-val.red { color: var(--red); }
+
+/* ── NEA Results panel ─────────────────────────────────────── */
+.results-panel {
+  margin-top: 28px;
+  animation: fadeUp .3s ease;
+}
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+.results-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 2px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.results-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--sub);
+  margin-bottom: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+/* Poisson bar */
+.poisson-bar {
+  display: flex;
+  height: 36px;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  gap: 2px;
+}
+.pb-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+  gap: 4px;
+}
+.pb-h { background: rgba(0,230,118,.2); color: var(--green); }
+.pb-d { background: rgba(255,214,0,.15); color: var(--yellow); }
+.pb-a { background: rgba(255,61,87,.2); color: var(--red); }
+
+/* NEA cards */
+.nea-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.nea-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 18px;
+  position: relative;
+  overflow: hidden;
+}
+.nea-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  transition: background .3s;
+}
+.nea-card.bargain   { border-color: rgba(0,230,118,.3); }
+.nea-card.bargain::after   { background: var(--green); }
+.nea-card.overpriced { border-color: rgba(255,61,87,.3); }
+.nea-card.overpriced::after { background: var(--red); }
+.nea-card.neutral::after { background: var(--muted); }
+
+.nea-label { font-family: var(--mono); font-size: 9px; color: var(--sub); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+.nea-team  { font-size: 13px; font-weight: 500; color: var(--text); min-height: 38px; margin-bottom: 14px; line-height: 1.4; }
+.nea-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.nea-score.bargain   { color: var(--green); }
+.nea-score.neutral   { color: var(--sub); }
+.nea-score.overpriced { color: var(--red); }
+
+.nea-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 2px;
+  margin-bottom: 16px;
+}
+.nea-badge.bargain   { background: rgba(0,230,118,.1); color: var(--green); }
+.nea-badge.neutral   { background: rgba(74,85,104,.2); color: var(--sub); }
+.nea-badge.overpriced { background: rgba(255,61,87,.1); color: var(--red); }
+
+.prob-stack { display: flex; flex-direction: column; gap: 5px; }
+.prob-row { display: flex; justify-content: space-between; }
+.prob-key { font-family: var(--mono); font-size: 10px; color: var(--sub); }
+.prob-num { font-family: var(--mono); font-size: 10px; color: var(--text2); }
+.prob-num.hi { color: var(--yellow); }
+
+/* Stats grid */
+.stats-grid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+.stats-grid-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+}
+.stats-cells {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.sc { display: flex; flex-direction: column; gap: 3px; }
+.sc-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; }
+.sc-val { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--text); }
+.sc-val.g { color: var(--green); }
+.sc-val.r { color: var(--red); }
+.sc-val.y { color: var(--yellow); }
+
+/* AI analysis */
+.ai-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--purple);
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+.ai-ttl {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--purple);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+.ai-txt { font-size: 12px; color: var(--text2); line-height: 1.8; }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+}
+@media (max-width: 640px) {
+  .content { padding: 20px 16px; }
+  .nea-row { grid-template-columns: 1fr; }
+  .stats-cells { grid-template-columns: repeat(2, 1fr); }
+  .match-card { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ── Sidebar ─────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-title">NEA SOCCER</div>
+      <div class="sb-logo-sub">Edge Alpha · Polymarket</div>
+    </div>
+
+    <!-- API Key -->
+    <div class="sb-section">
+      <div class="sb-section-label">Gemini API Key</div>
+      <div class="key-bar">
+        <input type="password" id="apiKeyInput" placeholder="AIza..." />
+        <div class="key-dot" id="keyDot"></div>
+      </div>
+    </div>
+
+    <!-- Days filter -->
+    <div class="sb-section">
+      <div class="sb-section-label">Ventana de tiempo</div>
+      <div class="days-row">
+        <div class="day-btn active" data-days="1">Hoy</div>
+        <div class="day-btn" data-days="2">+2d</div>
+        <div class="day-btn" data-days="3">+3d</div>
+        <div class="day-btn" data-days="7">+7d</div>
+      </div>
+    </div>
+
+    <!-- League list -->
+    <div class="sb-section">
+      <div class="sb-section-label">Ligas</div>
+    </div>
+    <div class="league-list" id="leagueList">
+      <div class="loading-txt" style="padding:8px 8px;font-family:var(--mono);font-size:11px;color:var(--sub)">Cargando...</div>
+    </div>
+
+    <div class="sb-footer">
+      NEA = (P_Poly − V_Real) × 100<br>
+      V_Real = 0.45·P_Mkt + 0.35·P_xG + 0.20·P_Form<br>
+      Poisson · Gemini AI · v2.0
+    </div>
+  </aside>
+
+  <!-- ── Main ────────────────────────────────────────────── -->
+  <main class="main">
+    <div class="main-header">
+      <div>
+        <div class="main-title" id="mainTitle">Selecciona una liga</div>
+        <div class="main-subtitle">Polymarket Soccer Edge Analyzer</div>
+      </div>
+      <button class="btn-winner" id="btnWinner" onclick="startWinner()">
+        🏆 A GANAR
+      </button>
+      <button class="btn-hunt" id="btnHunt" onclick="startHunt()">
+        🔍 BUSCAR OPORTUNIDADES
+      </button>
+      <div class="status-pill">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusTxt">Esperando</span>
+      </div>
+    </div>
+
+    <!-- ── Winner Overlay ───────────────────────────────────── -->
+    <div id="winnerOverlay" class="hunt-overlay" style="display:none;">
+      <div class="hunt-header">
+        <div>
+          <div class="hunt-title" style="color:var(--green);">🏆 A GANAR — V_Real &gt; 60%</div>
+          <div class="hunt-subtitle" id="winnerSubtitle">Analizando partidos con alta probabilidad real...</div>
+        </div>
+        <button class="hunt-close" onclick="closeWinner()">✕ CERRAR</button>
+      </div>
+      <div class="hunt-progress" id="winnerProgressSection">
+        <div class="hunt-progress-bar-bg">
+          <div class="hunt-progress-bar" id="winnerBar" style="width:0%;background:linear-gradient(90deg,var(--green),var(--green2));"></div>
+        </div>
+        <div class="hunt-progress-txt">
+          <span id="winnerProgressTxt">Preparando análisis...</span>
+          <span id="winnerProgressPct">0%</span>
+        </div>
+      </div>
+      <div class="hunt-body" id="winnerBody">
+        <div class="hunt-empty">
+          <div class="hunt-empty-icon">⚙️</div>
+          <div class="hunt-empty-txt">Iniciando búsqueda de favoritos...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Hunt Overlay ─────────────────────────────────────── -->
+    <div id="huntOverlay" class="hunt-overlay" style="display:none;">
+      <div class="hunt-header">
+        <div>
+          <div class="hunt-title">🎯 CAZADOR DE BARGAINS</div>
+          <div class="hunt-subtitle" id="huntSubtitle">Analizando todos los partidos disponibles...</div>
+        </div>
+        <button class="hunt-close" onclick="closeHunt()">✕ CERRAR</button>
+      </div>
+      <div class="hunt-progress" id="huntProgressSection">
+        <div class="hunt-progress-bar-bg">
+          <div class="hunt-progress-bar" id="huntBar" style="width:0%"></div>
+        </div>
+        <div class="hunt-progress-txt">
+          <span id="huntProgressTxt">Preparando análisis...</span>
+          <span id="huntProgressPct">0%</span>
+        </div>
+      </div>
+      <div class="hunt-body" id="huntBody">
+        <div class="hunt-empty">
+          <div class="hunt-empty-icon">⚙️</div>
+          <div class="hunt-empty-txt">Iniciando análisis masivo...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Formula bar -->
+      <div class="formula-bar">
+        <div class="f-item">
+          <span class="f-label">Fórmula</span>
+          <span class="f-val">NEA = (P_Poly − V_Real) × 100</span>
+        </div>
+        <div class="f-sep">·</div>
+        <div class="f-item">
+          <span class="f-label">V_Real</span>
+          <span class="f-val">0.45·P_Market + 0.35·P_xG(Poisson) + 0.20·P_Form</span>
+        </div>
+        <div class="f-sep">·</div>
+        <div class="f-item">
+          <span class="f-label">Signal</span>
+          <span class="f-val">≤ −10 BARGAIN · ≥ +10 OVERPRICED</span>
+        </div>
+      </div>
+
+      <!-- Dynamic area -->
+      <div id="dynamicArea">
+        <div class="empty-state">
+          <div class="empty-icon">⚽</div>
+          <div class="empty-txt">Selecciona una liga en el panel izquierdo</div>
+        </div>
+      </div>
+    </div>
+    <!-- Result panel — rendered separately so it survives re-renders -->
+    <div id="resultPanel" style="padding: 0 32px 32px;"></div>
+  </main>
+
+</div>
+
+<script>
+const API = 'http://localhost:5000/api';
+let state = {
+  leagues: [],
+  activeLeague: null,
+  days: 1,
+  matches: [],
+  selectedMatch: null,
+  analyzing: false,
+  result: null,
+};
+
+// ── Utils ────────────────────────────────────────────────────
+function fmtVol(v) {
+  if (v >= 1e6) return `$${(v/1e6).toFixed(2)}M`;
+  if (v >= 1e3) return `$${(v/1e3).toFixed(1)}K`;
+  return `$${v}`;
+}
+function getApiKey() { return document.getElementById('apiKeyInput').value.trim(); }
+function setStatus(txt, live=false) {
+  document.getElementById('statusTxt').textContent = txt;
+  document.getElementById('statusDot').className = 'status-dot' + (live?' live':'');
+}
+function setMainTitle(t) { document.getElementById('mainTitle').textContent = t; }
+
+// ── API Key indicator ────────────────────────────────────────
+document.getElementById('apiKeyInput').addEventListener('input', e => {
+  const k = e.target.value;
+  try { localStorage.setItem('nea_gemini_key', k); } catch{}
+  document.getElementById('keyDot').className = 'key-dot' + (k.length > 10 ? ' on' : '');
+});
+try {
+  const saved = localStorage.getItem('nea_gemini_key') || '';
+  if (saved) {
+    document.getElementById('apiKeyInput').value = saved;
+    document.getElementById('keyDot').className = 'key-dot on';
+  }
+} catch{}
+
+// ── Days buttons ─────────────────────────────────────────────
+document.querySelectorAll('.day-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.days = parseInt(btn.dataset.days);
+    if (state.activeLeague) loadMatches(state.activeLeague);
+  });
+});
+
+// ── Load leagues ─────────────────────────────────────────────
+async function loadLeagues() {
+  try {
+    const r = await fetch(`${API}/leagues`);
+    state.leagues = await r.json();
+    renderLeagues();
+  } catch(e) {
+    document.getElementById('leagueList').innerHTML =
+      `<div style="padding:8px;font-family:var(--mono);font-size:10px;color:var(--red)">⚠ Backend offline<br>Inicia app.py</div>`;
+  }
+}
+
+function renderLeagues(counts={}) {
+  const el = document.getElementById('leagueList');
+  el.innerHTML = state.leagues.map(l => `
+    <div class="league-item ${state.activeLeague===l.id?'active':''}" data-id="${l.id}">
+      <span class="league-name">${l.name}</span>
+      ${counts[l.id]!==undefined ? `<span class="league-count">${counts[l.id]}</span>` : ''}
+    </div>
+  `).join('');
+  el.querySelectorAll('.league-item').forEach(item => {
+    item.addEventListener('click', () => selectLeague(item.dataset.id));
+  });
+}
+
+// ── Select league ─────────────────────────────────────────────
+async function selectLeague(id) {
+  state.activeLeague = id;
+  state.selectedMatch = null;
+  state.result = null;
+  renderLeagues();
+  await loadMatches(id);
+}
+
+// ── Load matches ──────────────────────────────────────────────
+async function loadMatches(leagueId) {
+  setStatus('Cargando...', true);
+  showLoading('Obteniendo partidos de Polymarket...');
+  try {
+    const r = await fetch(`${API}/matches?league=${leagueId}&days=${state.days}`);
+    const data = await r.json();
+    state.matches = data.matches || [];
+    const liga = state.leagues.find(l => l.id === leagueId);
+    setMainTitle(liga?.name || leagueId);
+    setStatus(`${state.matches.length} partidos`, false);
+    renderMatches();
+  } catch(e) {
+    setStatus('Error', false);
+    showError('No se pudo conectar al backend. ¿Está ejecutando app.py?');
+  }
+}
+
+// ── Render matches ────────────────────────────────────────────
+function renderMatches() {
+  const area = document.getElementById('dynamicArea');
+  if (!state.matches.length) {
+    area.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-txt">Sin partidos en esta ventana de tiempo</div>
+        <div class="empty-txt" style="margin-top:4px">Prueba ampliar los días →</div>
+      </div>`;
+    return;
+  }
+
+  const cards = state.matches.map(m => {
+    const sel = state.selectedMatch?.id === m.id;
+    const oddsHtml = (m.poly_home || m.poly_draw || m.poly_away) ? `
+      <div class="odds-row">
+        ${m.poly_home!=null ? `<div class="odds-chip h">H ${(m.poly_home*100).toFixed(0)}%</div>` : ''}
+        ${m.poly_draw!=null ? `<div class="odds-chip d">D ${(m.poly_draw*100).toFixed(0)}%</div>` : ''}
+        ${m.poly_away!=null ? `<div class="odds-chip a">A ${(m.poly_away*100).toFixed(0)}%</div>` : ''}
+      </div>` : '<div style="font-family:var(--mono);font-size:10px;color:var(--muted)">precios no disp.</div>';
+    const tags = (m.tags||[]).filter(t=>t).slice(0,2).map(t=>`<div class="tag-pill">${t}</div>`).join('');
+    return `
+    <div class="match-card ${sel?'selected':''}" data-idx="${state.matches.indexOf(m)}">
+      <div class="match-teams">
+        <div class="match-name">${m.title}</div>
+        <div class="match-meta">
+          ${tags}
+          <div class="match-time">⏰ ${m.hours_str}</div>
+          <div class="match-time">📅 ${m.end_date}</div>
+        </div>
+      </div>
+      <div class="match-vol">
+        <div class="match-vol-num">${fmtVol(m.volume)}</div>
+        <div>Vol</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div class="match-odds">${oddsHtml}</div>
+        <button class="btn-analyze" onclick="event.stopPropagation(); analyzeMatch(${state.matches.indexOf(m)})"
+          ${state.analyzing?'disabled':''}>
+          ${sel && state.analyzing ? '⚙ SIMULANDO 10×...' : '⚡ NEA'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="matches-header">
+      <div class="league-title">${state.leagues.find(l=>l.id===state.activeLeague)?.name||''}</div>
+      <div class="matches-count">${state.matches.length} partidos</div>
+    </div>
+    ${cards}
+  `;
+
+  // Click on card = select
+  area.querySelectorAll('.match-card').forEach(card => {
+    card.addEventListener('click', () => {
+      state.selectedMatch = state.matches[parseInt(card.dataset.idx)];
+      renderMatches();
+    });
+  });
+}
+
+// ── Analyze match ─────────────────────────────────────────────
+async function analyzeMatch(idx) {
+  const m = state.matches[idx];
+  const key = getApiKey();
+  if (!key) {
+    showError('Ingresa tu Gemini API Key en el panel izquierdo.');
+    return;
+  }
+  state.selectedMatch = m;
+  state.analyzing = true;
+  state.result = null;
+  document.getElementById('resultPanel').innerHTML = '';
+  renderMatches();
+  setStatus('Simulando 10 llamadas a Gemini...', true);
+
+  const liga = state.leagues.find(l => l.id === state.activeLeague);
+
+  try {
+    const r = await fetch(`${API}/analyze`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        gemini_api_key: key,
+        home:      m.home,
+        away:      m.away,
+        league:    liga?.name || '',
+        poly_home: m.poly_home,
+        poly_draw: m.poly_draw,
+        poly_away: m.poly_away,
+      }),
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    state.result = data;
+    setStatus('Análisis completado ✓', false);
+  } catch(e) {
+    showError(`Error en análisis: ${e.message}`);
+    setStatus('Error', false);
+  }
+  state.analyzing = false;
+  renderMatches();
+
+  // ── Render result in dedicated panel ──────────────────────────
+  const panel = document.getElementById('resultPanel');
+  if (state.result && panel) {
+    panel.innerHTML = renderResult();
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+// ── Render result ─────────────────────────────────────────────
+function renderResult() {
+  const r = state.result;
+  if (!r) return '';
+
+  const pois     = r.poisson;
+  const outcomes = r.outcomes || [];
+  const ai       = r.ai_vars  || {};
+  const runsData = r.runs_data || [];
+  const runsOk   = r.runs_ok   || 1;
+  const runsTotal= r.runs_total|| 5;
+
+  // ── Determinar ganador ─────────────────────────────────────
+  const local    = outcomes.find(o => o.label === 'LOCAL');
+  const empate   = outcomes.find(o => o.label === 'EMPATE');
+  const visitante= outcomes.find(o => o.label === 'VISITANTE');
+
+  const probMap = [
+    { key: 'LOCAL',     team: r.home,  pct: pois.win_pct,  color: 'var(--green)',  icon: '🏠' },
+    { key: 'EMPATE',    team: 'Empate',pct: pois.draw_pct, color: 'var(--yellow)', icon: '🤝' },
+    { key: 'VISITANTE', team: r.away,  pct: pois.loss_pct, color: 'var(--red)',    icon: '✈️' },
+  ];
+  const winner = probMap.reduce((a, b) => a.pct >= b.pct ? a : b);
+
+  // ── Banner ganador ─────────────────────────────────────────
+  const winnerBanner = `
+    <div style="
+      background: linear-gradient(135deg, rgba(0,230,118,.08) 0%, rgba(0,230,118,.03) 100%);
+      border: 1px solid rgba(0,230,118,.35);
+      border-left: 4px solid var(--green);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      animation: fadeUp .3s ease;
+    ">
+      <div style="font-size: 40px; line-height:1;">${winner.icon}</div>
+      <div style="flex:1;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">
+          🏆 FAVORITO — Promedio de ${runsOk}/${runsTotal} simulaciones Gemini
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;color:${winner.color};line-height:1;">
+          ${winner.team}
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px;align-items:center;">
+          ${probMap.map(p => `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="
+                width: ${Math.max(p.pct, 4)}px; max-width:120px; min-width:20px;
+                height:5px; border-radius:3px;
+                background:${p.color};
+                opacity:${p.key===winner.key?1:0.35};
+                transition: width .5s;
+              "></div>
+              <div style="font-family:var(--mono);font-size:10px;color:${p.key===winner.key?p.color:'var(--sub)'};font-weight:${p.key===winner.key?700:400};">
+                ${p.team} <strong>${p.pct}%</strong>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:56px;color:${winner.color};line-height:1;">${winner.pct}%</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--sub);">P. Poisson promediada</div>
+      </div>
+    </div>`;
+
+  // ── Tabla de los 5 runs ────────────────────────────────────
+  const runsTable = runsData.length ? `
+    <div style="
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 14px;
+    ">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;">
+        🎲 ${runsOk}/${runsTotal} simulaciones Gemini — valores individuales
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="padding:6px 10px;color:var(--sub);text-align:left;font-weight:400;">Run</th>
+              <th style="padding:6px 10px;color:var(--green);text-align:right;">xG Local</th>
+              <th style="padding:6px 10px;color:var(--red);text-align:right;">xG Visit.</th>
+              <th style="padding:6px 10px;color:var(--yellow);text-align:right;">Form H</th>
+              <th style="padding:6px 10px;color:var(--yellow);text-align:right;">Form A</th>
+              <th style="padding:6px 10px;color:var(--text2);text-align:right;">Form D</th>
+              <th style="padding:6px 10px;color:var(--blue);text-align:right;">Home Adv</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${runsData.map((run, i) => `
+              <tr style="border-bottom:1px solid rgba(26,36,56,.5);">
+                <td style="padding:7px 10px;color:var(--sub);">#${run.run}</td>
+                <td style="padding:7px 10px;color:var(--green);text-align:right;">${run.xG_home}</td>
+                <td style="padding:7px 10px;color:var(--red);text-align:right;">${run.xG_away}</td>
+                <td style="padding:7px 10px;color:var(--text2);text-align:right;">${(run.form_home*100).toFixed(1)}%</td>
+                <td style="padding:7px 10px;color:var(--text2);text-align:right;">${(run.form_away*100).toFixed(1)}%</td>
+                <td style="padding:7px 10px;color:var(--text2);text-align:right;">${(run.form_draw*100).toFixed(1)}%</td>
+                <td style="padding:7px 10px;color:var(--blue);text-align:right;">${run.home_adv}x</td>
+              </tr>
+            `).join('')}
+            <tr style="border-top:1px solid var(--border2);background:rgba(61,139,255,.04);">
+              <td style="padding:7px 10px;color:var(--blue);font-weight:600;">AVG</td>
+              <td style="padding:7px 10px;color:var(--green);text-align:right;font-weight:600;">${ai.xG_home_attack}</td>
+              <td style="padding:7px 10px;color:var(--red);text-align:right;font-weight:600;">${ai.xG_away_attack}</td>
+              <td style="padding:7px 10px;color:var(--text2);text-align:right;font-weight:600;">
+                ${runsData.length ? (runsData.reduce((s,x)=>s+x.form_home,0)/runsData.length*100).toFixed(1) : '-'}%
+              </td>
+              <td style="padding:7px 10px;color:var(--text2);text-align:right;font-weight:600;">
+                ${runsData.length ? (runsData.reduce((s,x)=>s+x.form_away,0)/runsData.length*100).toFixed(1) : '-'}%
+              </td>
+              <td style="padding:7px 10px;color:var(--text2);text-align:right;font-weight:600;">
+                ${runsData.length ? (runsData.reduce((s,x)=>s+x.form_draw,0)/runsData.length*100).toFixed(1) : '-'}%
+              </td>
+              <td style="padding:7px 10px;color:var(--blue);text-align:right;font-weight:600;">${ai.home_advantage}x</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>` : '';
+
+  // ── NEA Cards ──────────────────────────────────────────────
+  const neaCards = outcomes.map(o => {
+    if (o.no_data) return `
+      <div class="nea-card neutral">
+        <div class="nea-label">${o.label}</div>
+        <div class="nea-team">${o.team}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--sub);margin-top:12px">Sin precio disponible</div>
+      </div>`;
+    const cls   = o.signal === 'BARGAIN' ? 'bargain' : o.signal === 'OVERPRICED' ? 'overpriced' : 'neutral';
+    const badge = o.signal === 'BARGAIN' ? '🎯 BARGAIN' : o.signal === 'OVERPRICED' ? '❌ OVERPRICED' : '— NEUTRAL';
+    return `
+      <div class="nea-card ${cls}">
+        <div class="nea-label">${o.label}</div>
+        <div class="nea-team">${o.team}</div>
+        <div class="nea-score ${cls}">${o.nea > 0 ? '+' : ''}${o.nea.toFixed(1)}</div>
+        <div class="nea-badge ${cls}">${badge}</div>
+        <div class="prob-stack">
+          <div class="prob-row"><span class="prob-key">P_Poly</span><span class="prob-num hi">${o.p_poly}%</span></div>
+          <div class="prob-row"><span class="prob-key">V_Real</span><span class="prob-num">${o.v_real}%</span></div>
+          <div class="prob-row"><span class="prob-key">P_Market</span><span class="prob-num">${o.p_market}%</span></div>
+          <div class="prob-row"><span class="prob-key">P_xG</span><span class="prob-num">${o.p_xg}%</span></div>
+          <div class="prob-row"><span class="prob-key">P_Form</span><span class="prob-num">${o.p_form}%</span></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+  <div class="results-panel">
+    <div class="results-title">${r.home} vs ${r.away}</div>
+    <div class="results-sub">
+      <span>${r.league}</span>
+      <span>·</span>
+      <span>λH ${pois.lambda_home} · λA ${pois.lambda_away}</span>
+      <span>·</span>
+      <span style="color:var(--green)">${runsOk}/${runsTotal} runs OK</span>
+    </div>
+
+    ${winnerBanner}
+
+    <div class="poisson-bar">
+      <div class="pb-seg pb-h" style="width:${pois.win_pct}%">▲ ${pois.win_pct}%</div>
+      <div class="pb-seg pb-d" style="width:${pois.draw_pct}%">= ${pois.draw_pct}%</div>
+      <div class="pb-seg pb-a" style="width:${pois.loss_pct}%">▼ ${pois.loss_pct}%</div>
+    </div>
+
+    ${runsTable}
+
+    <div class="nea-row">${neaCards}</div>
+
+    <div class="stats-grid">
+      <div class="stats-grid-title">📊 Variables promediadas (${runsOk} simulaciones Gemini AI)</div>
+      <div class="stats-cells">
+        <div class="sc"><span class="sc-lbl">xG Atq Local</span><span class="sc-val g">${ai.xG_home_attack}</span></div>
+        <div class="sc"><span class="sc-lbl">xGA Def Local</span><span class="sc-val">${ai.xGA_home_defense}</span></div>
+        <div class="sc"><span class="sc-lbl">xG Atq Visit.</span><span class="sc-val r">${ai.xG_away_attack}</span></div>
+        <div class="sc"><span class="sc-lbl">xGA Def Visit.</span><span class="sc-val">${ai.xGA_away_defense}</span></div>
+        <div class="sc"><span class="sc-lbl">λ Local (Poisson)</span><span class="sc-val g">${pois.lambda_home}</span></div>
+        <div class="sc"><span class="sc-lbl">λ Visitante</span><span class="sc-val r">${pois.lambda_away}</span></div>
+        <div class="sc"><span class="sc-lbl">Home Advantage</span><span class="sc-val y">${ai.home_advantage}x</span></div>
+        <div class="sc"><span class="sc-lbl">Inj. H / A</span>
+          <span class="sc-val" style="font-size:13px">
+            ${ai.injury_index_home >= 0 ? '+' : ''}${ai.injury_index_home} /
+            ${ai.injury_index_away >= 0 ? '+' : ''}${ai.injury_index_away}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-block">
+      <div class="ai-ttl">◆ Análisis Gemini AI + Google Search (run más representativo)</div>
+      <div class="ai-txt">${r.analysis}</div>
+    </div>
+  </div>`;
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function showLoading(msg='Cargando...') {
+  document.getElementById('dynamicArea').innerHTML = `
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <div class="loading-txt">${msg}</div>
+    </div>`;
+}
+function showError(msg) {
+  const area = document.getElementById('dynamicArea');
+  const prev = area.innerHTML;
+  area.innerHTML = `<div class="error-bar">⚠ ${msg}</div>` + prev;
+}
+
+// ── Hunt: Buscar Oportunidades BARGAIN ───────────────────────
+let huntAborted = false;
+
+async function startHunt() {
+  const key = getApiKey();
+  if (!key) {
+    showError('Ingresa tu Gemini API Key en el panel izquierdo para buscar oportunidades.');
+    return;
+  }
+
+  huntAborted = false;
+  document.getElementById('huntOverlay').style.display = 'flex';
+  document.getElementById('btnHunt').disabled = true;
+  document.getElementById('huntBody').innerHTML = `
+    <div class="hunt-empty">
+      <div class="hunt-empty-icon">🔄</div>
+      <div class="hunt-empty-txt">Obteniendo todos los partidos de Polymarket...</div>
+    </div>`;
+  setHuntProgress(0, 'Obteniendo partidos de todas las ligas...');
+
+  // 1) Cargar TODOS los partidos (liga "all")
+  let allMatches = [];
+  try {
+    const r = await fetch(`${API}/matches?league=all&days=${state.days}`);
+    const data = await r.json();
+    allMatches = data.matches || [];
+  } catch(e) {
+    document.getElementById('huntBody').innerHTML = `
+      <div class="hunt-empty">
+        <div class="hunt-empty-icon">⚠️</div>
+        <div class="hunt-empty-txt">Error: No se pudo conectar al backend</div>
+      </div>`;
+    document.getElementById('btnHunt').disabled = false;
+    return;
+  }
+
+  const total = allMatches.length;
+  if (!total) {
+    document.getElementById('huntBody').innerHTML = `
+      <div class="hunt-empty">
+        <div class="hunt-empty-icon">📭</div>
+        <div class="hunt-empty-txt">No hay partidos disponibles en esta ventana de tiempo</div>
+      </div>`;
+    document.getElementById('btnHunt').disabled = false;
+    return;
+  }
+
+  // 2) Analizar todos en paralelo por lotes de 3 (evitar rate-limit)
+  const BATCH = 3;
+  const bargains = [];
+  let done = 0;
+
+  document.getElementById('huntBody').innerHTML = `
+    <div class="hunt-empty">
+      <div class="hunt-empty-icon">🔍</div>
+      <div class="hunt-empty-txt" id="huntLiveMsg">Analizando partidos...</div>
+    </div>`;
+
+  setHuntProgress(0, `0 / ${total} partidos analizados`);
+
+  const liga = state.leagues.find(l => l.id === 'all') || { name: 'Soccer' };
+
+  for (let i = 0; i < allMatches.length; i += BATCH) {
+    if (huntAborted) break;
+    const batch = allMatches.slice(i, i + BATCH);
+
+    await Promise.all(batch.map(async (m) => {
+      if (huntAborted) return;
+      try {
+        const r = await fetch(`${API}/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gemini_api_key: key,
+            home:      m.home,
+            away:      m.away,
+            league:    (m.tags || []).join(', ') || 'Soccer',
+            poly_home: m.poly_home,
+            poly_draw: m.poly_draw,
+            poly_away: m.poly_away,
+          }),
+        });
+        const data = await r.json();
+        if (!data.error && data.outcomes) {
+          const foundBargains = (data.outcomes || []).filter(o => !o.no_data && o.signal === 'BARGAIN');
+          if (foundBargains.length > 0) {
+            bargains.push({ match: m, result: data, bargainOutcomes: foundBargains });
+            renderHuntResults(bargains, done, total);
+          }
+        }
+      } catch(e) { /* ignorar errores individuales */ }
+      done++;
+      const pct = Math.round((done / total) * 100);
+      setHuntProgress(pct, `${done} / ${total} partidos analizados — ${bargains.length} BARGAIN encontrados`);
+    }));
+  }
+
+  // 3) Resultado final
+  document.getElementById('huntProgressSection').style.display = 'none';
+  document.getElementById('huntSubtitle').textContent =
+    `Análisis completado: ${done}/${total} partidos · ${bargains.length} BARGAIN encontrados`;
+  renderHuntResults(bargains, done, total, true);
+  document.getElementById('btnHunt').disabled = false;
+}
+
+function setHuntProgress(pct, txt) {
+  document.getElementById('huntBar').style.width = pct + '%';
+  document.getElementById('huntProgressTxt').textContent = txt;
+  document.getElementById('huntProgressPct').textContent = pct + '%';
+}
+
+function renderHuntResults(bargains, done, total, finished = false) {
+  const body = document.getElementById('huntBody');
+
+  const statsHtml = `
+    <div class="hunt-stats">
+      <div class="hunt-stat">
+        <div class="hunt-stat-label">Partidos analizados</div>
+        <div class="hunt-stat-val green">${done}</div>
+      </div>
+      <div class="hunt-stat">
+        <div class="hunt-stat-label">BARGAIN encontrados</div>
+        <div class="hunt-stat-val yellow">${bargains.length}</div>
+      </div>
+      <div class="hunt-stat">
+        <div class="hunt-stat-label">Tasa de oportunidad</div>
+        <div class="hunt-stat-val">${done > 0 ? ((bargains.length / done) * 100).toFixed(1) : '0'}%</div>
+      </div>
+    </div>`;
+
+  if (!bargains.length) {
+    body.innerHTML = statsHtml + `
+      <div class="hunt-empty" style="padding:40px 20px;">
+        <div class="hunt-empty-icon">${finished ? '😔' : '🔍'}</div>
+        <div class="hunt-empty-txt">${finished ? 'No se encontraron oportunidades BARGAIN en esta ventana' : 'Buscando BARGAINS...'}</div>
+      </div>`;
+    return;
+  }
+
+  const cardsHtml = bargains.map(({ match: m, result: r, bargainOutcomes }) => {
+    const chipsHtml = bargainOutcomes.map(o => `
+      <div class="bargain-outcome-chip">
+        <div class="bargain-outcome-label">${o.label}</div>
+        <div class="bargain-outcome-team" title="${o.team}">${o.team}</div>
+        <div class="bargain-outcome-nea">${o.nea > 0 ? '+' : ''}${o.nea.toFixed(1)} NEA</div>
+        <div class="bargain-outcome-poly">Poly: ${o.p_poly}% · VReal: ${o.v_real}%</div>
+      </div>`).join('');
+
+    return `
+      <div class="bargain-card">
+        <div>
+          <div class="bargain-match">${m.title}</div>
+          <div class="bargain-league">⏰ ${m.hours_str} · ${m.end_date}</div>
+          <div class="bargain-outcomes">${chipsHtml}</div>
+        </div>
+        <div class="bargain-meta">
+          <div class="bargain-vol">${fmtVol(m.volume)} vol</div>
+          <a class="bargain-link" href="${m.url}" target="_blank">Ver en Polymarket ↗</a>
+        </div>
+      </div>`;
+  }).join('');
+
+  body.innerHTML = statsHtml + `
+    <div class="hunt-section-title" style="color:var(--yellow);">
+      🎯 BARGAINS DETECTADOS <span style="font-size:14px;color:var(--sub);font-family:var(--mono);letter-spacing:0;">(NEA ≤ −10)</span>
+    </div>
+    ${cardsHtml}`;
+}
+
+function closeHunt() {
+  huntAborted = true;
+  document.getElementById('huntOverlay').style.display = 'none';
+  document.getElementById('huntProgressSection').style.display = '';
+  document.getElementById('btnHunt').disabled = false;
+}
+
+// ── Winner: A Ganar (V_Real > 60%) ──────────────────────────
+let winnerAborted = false;
+
+async function startWinner() {
+  const key = getApiKey();
+  if (!key) {
+    showError('Ingresa tu Gemini API Key en el panel izquierdo para usar A Ganar.');
+    return;
+  }
+
+  winnerAborted = false;
+  document.getElementById('winnerOverlay').style.display = 'flex';
+  document.getElementById('btnWinner').disabled = true;
+  document.getElementById('winnerProgressSection').style.display = '';
+  document.getElementById('winnerBody').innerHTML = `
+    <div class="hunt-empty">
+      <div class="hunt-empty-icon">🔄</div>
+      <div class="hunt-empty-txt">Obteniendo todos los partidos de Polymarket...</div>
+    </div>`;
+  setWinnerProgress(0, 'Obteniendo partidos...');
+
+  let allMatches = [];
+  try {
+    const r = await fetch(`${API}/matches?league=all&days=${state.days}`);
+    const data = await r.json();
+    allMatches = data.matches || [];
+  } catch(e) {
+    document.getElementById('winnerBody').innerHTML = `
+      <div class="hunt-empty">
+        <div class="hunt-empty-icon">⚠️</div>
+        <div class="hunt-empty-txt">Error: No se pudo conectar al backend</div>
+      </div>`;
+    document.getElementById('btnWinner').disabled = false;
+    return;
+  }
+
+  const total = allMatches.length;
+  if (!total) {
+    document.getElementById('winnerBody').innerHTML = `
+      <div class="hunt-empty">
+        <div class="hunt-empty-icon">📭</div>
+        <div class="hunt-empty-txt">No hay partidos disponibles en esta ventana de tiempo</div>
+      </div>`;
+    document.getElementById('btnWinner').disabled = false;
+    return;
+  }
+
+  const BATCH = 3;
+  const winners = [];
+  let done = 0;
+
+  document.getElementById('winnerBody').innerHTML = `
+    <div class="hunt-empty">
+      <div class="hunt-empty-icon">🏆</div>
+      <div class="hunt-empty-txt" id="winnerLiveMsg">Analizando partidos...</div>
+    </div>`;
+
+  setWinnerProgress(0, `0 / ${total} partidos analizados`);
+
+  for (let i = 0; i < allMatches.length; i += BATCH) {
+    if (winnerAborted) break;
+    const batch = allMatches.slice(i, i + BATCH);
+
+    await Promise.all(batch.map(async (m) => {
+      if (winnerAborted) return;
+      try {
+        const r = await fetch(`${API}/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gemini_api_key: key,
+            home:      m.home,
+            away:      m.away,
+            league:    (m.tags || []).join(', ') || 'Soccer',
+            poly_home: m.poly_home,
+            poly_draw: m.poly_draw,
+            poly_away: m.poly_away,
+          }),
+        });
+        const data = await r.json();
+        if (!data.error && data.outcomes) {
+          // Filtrar outcomes con v_real > 60%
+          const highProb = (data.outcomes || []).filter(o => !o.no_data && o.v_real > 60);
+          if (highProb.length > 0) {
+            // Ordenar por v_real desc
+            highProb.sort((a, b) => b.v_real - a.v_real);
+            winners.push({ match: m, result: data, highProbOutcomes: highProb });
+            renderWinnerResults(winners, done, total);
+          }
+        }
+      } catch(e) { /* ignorar errores individuales */ }
+      done++;
+      const pct = Math.round((done / total) * 100);
+      setWinnerProgress(pct, `${done} / ${total} partidos analizados — ${winners.length} con V_Real > 60%`);
+    }));
+  }
+
+  document.getElementById('winnerProgressSection').style.display = 'none';
+  document.getElementById('winnerSubtitle').textContent =
+    `Análisis completado: ${done}/${total} partidos · ${winners.length} con V_Real > 60%`;
+  renderWinnerResults(winners, done, total, true);
+  document.getElementById('btnWinner').disabled = false;
+}
+
+function setWinnerProgress(pct, txt) {
+  document.getElementById('winnerBar').style.width = pct + '%';
+  document.getElementById('winnerProgressTxt').textContent = txt;
+  document.getElementById('winnerProgressPct').textContent = pct + '%';
+}
+
+function renderWinnerResults(winners, done, total, finished = false) {
+  const body = document.getElementById('winnerBody');
+
+  // Ordenar por v_real máximo desc
+  const sorted = [...winners].sort((a, b) =>
+    b.highProbOutcomes[0].v_real - a.highProbOutcomes[0].v_real
+  );
+
+  const statsHtml = `
+    <div class="hunt-stats">
+      <div class="hunt-stat">
+        <div class="hunt-stat-label">Partidos analizados</div>
+        <div class="hunt-stat-val green">${done}</div>
+      </div>
+      <div class="hunt-stat">
+        <div class="hunt-stat-label">V_Real &gt; 60%</div>
+        <div class="hunt-stat-val" style="color:var(--green);">${winners.length}</div>
+      </div>
+      <div class="hunt-stat">
+        <div class="hunt-stat-label">Mejor V_Real</div>
+        <div class="hunt-stat-val" style="color:var(--green);">
+          ${winners.length > 0 ? sorted[0].highProbOutcomes[0].v_real.toFixed(1) + '%' : '—'}
+        </div>
+      </div>
+    </div>`;
+
+  if (!winners.length) {
+    body.innerHTML = statsHtml + `
+      <div class="hunt-empty" style="padding:40px 20px;">
+        <div class="hunt-empty-icon">${finished ? '😔' : '🔍'}</div>
+        <div class="hunt-empty-txt">${finished ? 'No se encontraron resultados con V_Real > 60%' : 'Buscando favoritos...'}</div>
+      </div>`;
+    return;
+  }
+
+  const signalLabel = (sig) => {
+    if (sig === 'BARGAIN') return '<span style="color:var(--green);font-family:var(--mono);font-size:9px;">🎯 BARGAIN</span>';
+    if (sig === 'OVERPRICED') return '<span style="color:var(--red);font-family:var(--mono);font-size:9px;">❌ OVERPRICED</span>';
+    return '<span style="color:var(--sub);font-family:var(--mono);font-size:9px;">— NEUTRAL</span>';
+  };
+
+  const cardsHtml = sorted.map(({ match: m, result: r, highProbOutcomes }) => {
+    const chipsHtml = highProbOutcomes.map(o => `
+      <div class="winner-outcome-chip">
+        <div class="bargain-outcome-label">${o.label}</div>
+        <div class="bargain-outcome-team" title="${o.team}">${o.team}</div>
+        <div class="winner-outcome-vreal">${o.v_real.toFixed(1)}%</div>
+        <div class="bargain-outcome-poly" style="margin-top:2px;">Poly: ${o.p_poly}% · xG: ${o.p_xg}%</div>
+        <div style="margin-top:4px;">${signalLabel(o.signal)}</div>
+      </div>`).join('');
+
+    return `
+      <div class="winner-card">
+        <div>
+          <div class="bargain-match">${m.title}</div>
+          <div class="bargain-league">⏰ ${m.hours_str} · ${m.end_date}</div>
+          <div class="bargain-outcomes" style="margin-top:10px;">${chipsHtml}</div>
+        </div>
+        <div class="bargain-meta">
+          <div class="bargain-vol">${fmtVol(m.volume)} vol</div>
+          <a class="bargain-link" href="${m.url}" target="_blank">Ver en Polymarket ↗</a>
+        </div>
+      </div>`;
+  }).join('');
+
+  body.innerHTML = statsHtml + `
+    <div class="hunt-section-title" style="color:var(--green);">
+      🏆 FAVORITOS — V_Real &gt; 60%
+      <span style="font-size:13px;color:var(--sub);font-family:var(--mono);letter-spacing:0;">ordenados por probabilidad real</span>
+    </div>
+    ${cardsHtml}`;
+}
+
+function closeWinner() {
+  winnerAborted = true;
+  document.getElementById('winnerOverlay').style.display = 'none';
+  document.getElementById('winnerProgressSection').style.display = '';
+  document.getElementById('btnWinner').disabled = false;
+}
+
+// ── Init ──────────────────────────────────────────────────────
+loadLeagues();
+</script>
+</body>
+</html>
